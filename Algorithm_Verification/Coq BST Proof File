@@ -1,0 +1,201 @@
+From Coq Require Import String.
+From Coq Require Export Arith.
+From Coq Require Export Lia.
+
+Notation  "a >=? b" := (Nat.leb b a) (at level 70) : nat_scope.
+Notation  "a >? b"  := (Nat.ltb b a) (at level 70) : nat_scope.
+
+
+Definition key := nat.
+
+Inductive tree (B : Type) : Type :=
+| E
+| T (l : tree B) (k : key) (b : B) (r : tree B).
+
+Arguments E {B}.
+Arguments T {B}.
+
+Definition empty_tree {B : Type} : tree B := E. 
+
+Fixpoint insert {B : Type} (x : key) (b : B) (t : tree B) : tree B :=
+  match t with 
+  |E => T E x b E
+  |T l k b' r => if (x >? k) then T l k b' (insert x b r)
+                 else if (k >? x) then T (insert x b l) k b' r
+                 else T l k b r
+  end. 
+
+Fixpoint get {B : Type} (dne : B) (x : key) (t : tree B) : B :=
+  match t with 
+  |E => dne
+  |T l k b r => if (x >? k) then (get dne x r)
+                 else if (k >? x) then (get dne x l)
+                 else b
+  end. 
+
+(***
+Fixpoint successor {B : Type} (l : tree B) (r : tree B): tree B :=
+   match l with 
+   |E => r
+   |T l2 k2 b2 r2 => 
+     match r with 
+     |E => l
+     |T l3 k3 b3 r3 => 
+
+Fixpoint delete {B : Type} (x : key) (t : tree B) : B :=
+  match t with 
+  |E => E
+  |T l k b r => if (x >? k) then (delete x r)
+                 else if (k >? x) then (delete x l)
+                 else 
+                    (successor l r) **)
+
+
+
+Inductive reflect (P : Prop) : bool -> Set :=
+  | reflectT :   P -> reflect P true
+  | reflectF : ~ P -> reflect P false.
+
+Theorem iff_reflect : forall P b, (P <-> b = true) -> reflect P b.
+Proof.
+  intros P b H. destruct b. 
+  - inversion H. apply reflectT. simpl in H1. rewrite H. reflexivity. 
+  - inversion H. apply reflectF. unfold not. rewrite H. intros. discriminate H2. 
+Qed. 
+
+Fixpoint forallBST {B : Type} (P: key -> B -> Prop) (t: tree B) : Prop :=
+  match t with
+  | E => True
+  | T l k v r => P k v /\ forallBST P l /\ forallBST P r
+  end.
+
+Theorem reflect_iff : forall P b, reflect P b -> (P <-> b = true).
+Proof.
+  intros P b H. split. 
+  - inversion H. 
+    * intros. reflexivity. 
+    * intros. unfold not in H0. apply H0 in H2. contradiction. 
+  - intros. subst. inversion H. apply H0. 
+Qed. 
+
+Lemma eqb_reflect : forall x y, reflect (x = y) (x =? y).
+Proof.
+  intros. apply iff_reflect. symmetry. apply Nat.eqb_eq. 
+Qed. 
+
+Lemma ltb_reflect : forall x y, reflect (x < y) (x <? y).
+Proof.
+  intros. apply iff_reflect. symmetry. apply Nat.ltb_lt.
+Qed. 
+  
+
+Lemma leb_reflect : forall x y, reflect (x <= y) (x <=? y).
+Proof.
+  intros. apply iff_reflect. symmetry. apply Nat.leb_le.
+Qed. 
+
+Inductive BST  {B : Type} : tree B -> Prop :=
+  |BST_E : BST E
+  |BST_T : forall l k b r,
+            forallBST (fun y _ => y < k) l -> 
+            forallBST (fun y _ => y > k) r -> 
+            BST l -> 
+            BST r -> 
+            BST (T l k b r).
+
+Theorem empty_BST : forall (B: Type), BST (@empty_tree B). 
+  intros B. apply BST_E. 
+Qed. 
+Hint Resolve ltb_reflect leb_reflect eqb_reflect : bdestruct.
+
+Ltac bdestruct X :=
+  let H := fresh in let e := fresh "e" in
+   evar (e: Prop);
+   assert (H: reflect e X); subst e;
+    [eauto with bdestruct
+    | destruct H as [H|H];
+       [ | try first [apply not_lt in H | apply not_le in H]]].
+
+
+Lemma ForallT_insert : forall (B : Type) (P : key -> B -> Prop) (t : tree B),
+    forallBST P t -> forall (k : key) (v : B),
+      P k v -> forallBST P (insert k v t).
+Proof.
+  intros B P t. induction t. intros H. intros k. intros v. 
+  - intros. simpl. split. apply H0. split. trivial. trivial. 
+  - intros. simpl. bdestruct (k0 >? k). 
+    + simpl. split. 
+      ++ inversion H. apply H2. 
+      ++ split. inversion H. destruct H3. apply H3. apply IHt2 in H0. apply H0. inversion H. destruct H3. apply H4. 
+    + bdestruct (k >? k0). 
+      ++ simpl. split. inversion H. apply H3. split. 
+          apply IHt1 in H0. apply H0. inversion H. destruct H4. apply H4. inversion H. destruct H4. apply H5. 
+      ++ simpl. repeat split. destruct H as [H3 [H4 H5]]. assert (k = k0). {
+      destruct H1. reflexivity. absurd (S m <= m). 
+          * apply Nat.nle_succ_diag_l.
+          * etransitivity. eassumption. apply H1. }
+        rewrite H. apply H0. destruct H as [H3 [H4 H5]]. apply H4. destruct H as [H3 [H4 H5]]. apply H5. 
+Qed. 
+      
+Theorem insert_BST : forall (B : Type) (k : key) (b : B) (t : tree B), 
+BST t -> BST (insert k b t ). 
+Proof.
+  intros B k b t. induction t; intros H. 
+  - simpl. apply BST_T. 
+    * simpl. trivial. 
+    * simpl. trivial. 
+    * apply BST_E.
+    * apply BST_E. 
+  - inversion H; subst. simpl in *. bdestruct (k0 >? k). 
+    * bdestruct (k >? k0). 
+      + lia. 
+      + apply BST_T. 
+         ++ apply ForallT_insert. apply H4. apply H0. 
+         ++ apply H5. 
+         ++ apply IHt1 in H6. apply H6. 
+         ++ apply H7. 
+    * bdestruct (k >? k0). 
+      + apply BST_T. 
+        ++ apply H4. 
+        ++ apply ForallT_insert. apply H5. apply H1. 
+        ++ apply H6. 
+        ++ apply IHt2 in H7. apply H7. 
+      + assert (k = k0). {
+      destruct H1. reflexivity. absurd (S m <= m). 
+          * apply Nat.nle_succ_diag_l.
+          * etransitivity. eassumption. apply H1. }
+        apply BST_T. 
+          ** apply H4. 
+          ** apply H5. 
+          ** apply H6. 
+          ** apply H7. 
+Qed. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
