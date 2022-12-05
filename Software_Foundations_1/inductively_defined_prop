@@ -1,0 +1,208 @@
+Require Export Arith_base.
+
+Inductive even : nat -> Prop :=
+  | even_O : even 0
+  | even_S : forall n, odd n -> even (S n)
+with odd : nat -> Prop :=
+    odd_S : forall n, even n -> odd (S n).
+
+
+Lemma even_double : forall k, Nat.even (Nat.double k) = true.
+Proof. 
+  intros k. unfold Nat.double. induction k as [|k']. 
+  - reflexivity. 
+  - simpl. rewrite -> Nat.add_comm. simpl. apply IHk'. 
+Qed. 
+
+Theorem evenb_S: forall n: nat,
+  Nat.even (S n) = negb (Nat.even n).
+Proof.
+  Admitted.  
+
+
+Lemma even_double_conv : forall n, exists k,
+  n = if Nat.even n then Nat.double k else S (Nat.double k).
+Proof. 
+  intros n. induction n as [|n'].
+    - exists 0. reflexivity. 
+    - destruct IHn' as [k IHn]. rewrite -> evenb_S. destruct (Nat.even n'). 
+      + exists k. rewrite -> IHn. simpl. reflexivity. 
+      + exists (S k). rewrite -> IHn. simpl. unfold Nat.double. Admitted. 
+
+
+Theorem andb_true_iff : forall b1 b2:bool,
+  andb b1 b2 = true <-> b1 = true /\ b2 = true.
+Proof.
+  intros b1 b2. split. 
+  - intros H. unfold andb in H. destruct b1. 
+    + destruct b2. 
+      * split. {reflexivity.
+               }
+               {reflexivity.
+               }
+      * discriminate H. 
+    + discriminate H. 
+  - intros H. inversion H. rewrite H0. rewrite H1. simpl. reflexivity. 
+Qed. 
+
+Require Import List.
+Import ListNotations.
+
+Fixpoint eqb_list {A : Type} (eqb : A -> A -> bool)
+                  (l1 l2 : list A) : bool :=
+  match l1, l2 with 
+  |[], [] => true
+  |[], x :: _ => false
+  |x:: _ , [] => false
+  |x1 :: y1, x2 :: y2 => andb (eqb x1 x2) (eqb_list eqb y1 y2)
+  end. 
+
+
+(***Theorem eqb_list_true_iff :
+  forall A (eqb : A -> A -> bool),
+    (forall a1 a2, eqb a1 a2 = true <-> a1 = a2) ->
+    forall l1 l2, eqb_list eqb l1 l2 = true <-> l1 = l2.
+Proof.
+  intros A. intros eqb. intros H. split. 
+   - intros H1. unfold eqb_list in H1. destruct l1 as [|l1']. 
+      + destruct l2. 
+        * reflexivity. 
+        * discriminate H1. 
+      + destruct l2 as [|l2']. 
+        * discriminate H1. 
+        * simpl. ***)
+
+Theorem eqb_list_true_iff :
+  forall A (eqb : A -> A -> bool),
+    (forall a1 a2, eqb a1 a2 = true <-> a1 = a2) ->
+    forall l1 l2, eqb_list eqb l1 l2 = true <-> l1 = l2.
+Proof.
+  intros A. intros eqb. intros [h1 h2]. induction l1 as [|l1']. 
+  - split. 
+    + intros H. inversion H. destruct l2. 
+      * reflexivity. 
+      * discriminate H1. 
+    + intros H. destruct l2. 
+      * reflexivity. 
+      * discriminate H. 
+  - simpl. destruct l2. 
+    + split. 
+      * intros H. discriminate H. 
+      * intros H. discriminate H. 
+    + split. 
+      * intros H. Abort. 
+
+
+Theorem eqb_list_true_iff :
+  forall A (eqb : A -> A -> bool),
+    (forall a1 a2, eqb a1 a2 = true <-> a1 = a2) ->
+    forall l1 l2, eqb_list eqb l1 l2 = true <-> l1 = l2.
+Proof.
+  intros A eqb eqb_com. induction l1 as [|h1 l1' IHl1'].
+  - destruct l2. 
+    + split. reflexivity. reflexivity. 
+    + simpl. split. discriminate. discriminate. 
+  - simpl. destruct l2. 
+    + split. discriminate. discriminate. 
+    + split. Abort. 
+
+
+Inductive ev : nat -> Prop :=
+  | ev_0 : ev 0
+  | ev_SS (n : nat) (H : ev n) : ev (S (S n)).
+
+Theorem ev_4 : ev 4.
+  Proof. apply ev_SS. apply ev_SS. apply ev_0. Qed. 
+
+Theorem ev_double : forall n,
+  ev (Nat.double n).
+Proof.
+  intros n. unfold Nat.double. induction n. 
+    - apply ev_0. 
+    - simpl. rewrite -> Nat.add_comm. simpl. apply ev_SS. apply IHn. 
+Qed. 
+
+Theorem ev_inversion : forall (n : nat),
+    ev n ->
+    (n = 0) \/ (exists n', n = S (S n') /\ ev n').
+Proof.
+  intros n E. destruct E as [| n' E']. 
+    - left. reflexivity. 
+    - right. exists n'. split. 
+      * reflexivity. 
+      * apply E'. 
+Qed. 
+
+Lemma ev_Even : forall n,
+  ev n -> Nat.Even n.
+Proof.
+  intros n E. induction E as [|n' E' IH].
+  - unfold Nat.Even. exists 0. reflexivity. 
+  - unfold Nat.Even. unfold Nat.Even in IH. destruct IH. rewrite -> H. exists (S x).  simpl. 
+  rewrite -> Nat.add_assoc. rewrite -> Nat.add_comm. rewrite <- Nat.add_comm. rewrite <- Nat.add_assoc. 
+Abort.
+
+Theorem ev_sum : forall n m, ev n -> ev m -> ev (n + m).
+Proof.
+  intros n m H H1. induction H as [|n' H' IH].
+  - simpl. apply H1. 
+  - simpl. apply ev_SS. apply IH.
+Qed. 
+
+Theorem ev_ev__ev : forall n m,
+  ev (n+m) -> ev n -> ev m.
+  (* Hint: There are two pieces of evidence you could attempt to induct upon
+      here. If one doesn't work, try the other. *)
+Proof.
+  intros n m H H1. induction H1 as [|n' H1' IH]. 
+  - simpl in H. apply H. 
+  - simpl in H. inversion H. apply IH in H1. apply H1. 
+Qed. 
+
+Inductive le : nat -> nat -> Prop :=
+  | le_n (n : nat) : le n n
+  | le_S (n m : nat) (H : le n m) : le n (S m).
+Notation "n <= m" := (le n m).
+
+
+Inductive total_relation : nat -> nat -> Prop :=
+  | tot_n (n : nat) : total_relation n n
+  | tot_nm (n m : nat) (H: total_relation n m) : total_relation (S n) m. 
+
+Check total_relation 6 4. 
+
+Lemma le_trans : forall m n o, m <= n -> n <= o -> m <= o.
+Proof.
+  intros m n o. intros H H1. induction H1. 
+  - apply H. 
+  - apply IHle in H. apply le_S in H. apply H. 
+Qed. 
+
+Theorem O_le_n : forall n,
+  0 <= n.
+Proof.
+  intros n. induction n. 
+  - apply le_n. 
+  - apply le_S. apply IHn. 
+ Qed. 
+
+Theorem n_le_m__Sn_le_Sm : forall n m,
+  n <= m -> S n <= S m.
+Proof.
+  intros n m H. induction H. 
+  - apply le_n. 
+  - apply le_S. apply IHle. 
+Qed. 
+
+Theorem plus_lt : forall n1 n2 m,
+  n1 + n2 < m ->
+  n1 < m /\ n2 < m.
+Proof.
+  intros n1 n2 m H. split. 
+  - induction n2 as [| n2']. 
+    + rewrite -> Nat.add_0_r in H. apply H. 
+    + inversion IHn2'. 
+
+
+
+

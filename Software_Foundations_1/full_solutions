@@ -1,0 +1,310 @@
+
+Inductive ev : nat -> Prop :=
+  | ev_0 : ev 0
+  | ev_SS (n : nat) (H : ev n) : ev (S (S n)).
+
+Theorem SSSSev__even : forall n,
+  ev (S (S (S (S n)))) -> ev n.
+Proof.
+  intros. inversion H as [| n' H' Heq]. inversion H'. apply H1. 
+Qed. 
+
+Theorem inversion_ex2 : forall (n : nat),
+  S n = O -> 2 + 2 = 5.
+Proof. 
+  intros. inversion H. 
+Qed. 
+
+
+Theorem ev_sum : forall n m, ev n -> ev m -> ev (n + m).
+Proof.
+  intros. induction H. 
+  * simpl. apply H0. 
+  * induction H0. 
+    + simpl. apply ev_SS in IHev. apply IHev. 
+    + apply ev_SS in IHev. apply IHev. 
+Qed. 
+
+Inductive ev' : nat -> Prop :=
+  | ev'_0 : ev' 0
+  | ev'_2 : ev' 2
+  | ev'_sum n m (Hn : ev' n) (Hm : ev' m) : ev' (n + m).
+
+Theorem ev_ev__ev : forall n m,
+  ev (n+m) -> ev n -> ev m.
+Proof.
+  intros. induction H0. 
+  - simpl in H. apply H. 
+  - apply ev_SS in IHev. 
+    * inversion IHev. apply H2. 
+    * inversion H. apply H2. 
+Qed. 
+
+Lemma le_trans : forall m n o, m <= n -> n <= o -> m <= o.
+Proof.
+  intros. inversion H. 
+  * apply H0. 
+  * Abort.
+
+Check ev_ind :
+  forall P : nat -> Prop,
+    P 0 ->
+    (forall n : nat, ev n -> P n -> P (S (S n))) ->
+    forall n : nat, ev n -> P n.
+
+Theorem ev_ev' : forall n, ev n -> ev' n.
+Proof.
+apply ev_ind. 
+  - apply ev'_0. 
+  - intros n H1 H2. apply (ev'_sum 2 n). 
+    * apply ev'_2.
+    * apply H2. 
+Qed. 
+
+Inductive booltree : Type :=
+  | bt_empty
+  | bt_leaf (b : bool)
+  | bt_branch (b : bool) (t1 t2 : booltree).
+
+(**** LOGIC WORK *****)
+
+Theorem or_distributes_over_and : forall P Q R : Prop,
+  P \/ (Q /\ R) <-> (P \/ Q) /\ (P \/ R).
+Proof.
+  intros. split. 
+  - intros. inversion H. 
+    * split. left. apply H0. left. apply H0. 
+    * split. right. apply H0. right. apply H0. 
+  - intros. inversion H. destruct H0. 
+    * left. apply H0. 
+    * destruct H1. 
+      + left. apply H1. 
+      + right. split. apply H0. apply H1. 
+Qed. 
+
+Theorem contrapositive : forall (P Q : Prop),
+  (P -> Q) -> (not Q -> not P).
+Proof.
+  intros. unfold not. unfold not in H0. intros. apply H in H1. apply H0 in H1. apply H1. 
+Qed. 
+
+Theorem not_both_true_and_false : forall P : Prop,
+  not (P /\ not P).
+Proof.
+  intros. unfold not. intros. destruct H. apply H0 in H. apply H. 
+Qed. 
+
+Theorem de_morgan_not_or : forall (P Q : Prop),
+    not (P \/ Q) -> not P /\ not Q.
+Proof.
+  intros. unfold not. unfold not in H. split. 
+    - intros. destruct H. left. apply H0. 
+    - intros. destruct H. right. apply H0.
+Qed.
+
+
+Module IffPlayground.
+Definition iff (P Q : Prop) := (P -> Q) /\ (Q -> P).
+Notation "P <-> Q" := (iff P Q)
+                      (at level 95, no associativity)
+                      : type_scope.
+End IffPlayground.
+Theorem iff_sym : forall P Q : Prop,
+  (P <-> Q) -> (Q <-> P).
+Proof.
+  intros. split. 
+  - intros. destruct H. apply H1 in H0. apply H0. 
+  - intros. destruct H. apply H in H0. apply H0. 
+Qed. 
+
+
+Theorem or_distributes_over_and' : forall P Q R : Prop,
+  P \/ (Q /\ R) <-> (P \/ Q) /\ (P \/ R).
+Proof.
+  intros. split. 
+  - intros. split. 
+    * destruct H. left. apply H. right. apply H. 
+    * destruct H. left. apply H. right. apply H. 
+  - intros. destruct H. destruct H. left. apply H. destruct H0. left. apply H0. right. split. apply H. apply H0.
+Qed. 
+
+
+From Coq Require Import Setoids.Setoid.
+
+Lemma mul_eq_0 : forall n m, n * m = 0 <-> n = 0 \/ m = 0.
+  intros. split. 
+  * intros. induction n. 
+    - left. reflexivity. 
+    - Abort.
+
+
+Theorem dist_exists_or : forall (X:Type) (P Q : X -> Prop),
+  (exists x, P x \/ Q x) <-> (exists x, P x) \/ (exists x, Q x).
+Proof.
+  intros. split. 
+  - intros. destruct H. destruct H. 
+    * left. exists x. apply H. 
+    * right. exists x. apply H. 
+  - intros. destruct H. 
+    * destruct H. exists x. left. apply H. 
+    * destruct H. exists x. right. apply H. 
+Qed. 
+
+Theorem dist_not_exists : forall (X:Type) (P : X -> Prop),
+  (forall x, P x) -> not (exists x, not (P x)).
+Proof.
+  unfold not. intros X P A [x NP]. apply NP. apply A. 
+Qed. 
+
+Theorem and_assoc : forall P Q R : Prop,
+  P /\ (Q /\ R) -> (P /\ Q) /\ R.
+Proof.
+  intros. split. 
+  - split. 
+    * destruct H. apply H. 
+    * destruct H. destruct H0. apply H0. 
+  - destruct H. destruct H0. 
+apply H1.
+Qed. 
+
+Require Export Arith_base. 
+
+Example and_exercise :
+  forall n m : nat, n + m = 0 -> n = 0 /\ m = 0.
+Proof.
+  intros. split. 
+    - induction n. 
+      * reflexivity. 
+      * discriminate H. 
+    - induction m.
+      * reflexivity. 
+      * rewrite plus_comm in H. discriminate H. 
+Qed. 
+
+Require Import PeanoNat.
+
+Axiom functional_extensionality : forall {X Y: Type}
+                                    {f g : X -> Y},
+  (forall (x:X), f x = g x) -> f = g.
+  
+Example function_equality_ex2 :
+  (fun x => plus x 1) = (fun x => plus 1 x).
+Proof.
+  apply functional_extensionality. intros. rewrite plus_comm. reflexivity. 
+Qed. 
+
+
+
+Definition double (n: nat) := 2 * n. 
+
+Theorem even_S : forall n : nat,
+  Nat.even (S n) = negb (Nat.even n).
+Proof.
+  intros. induction n. 
+  - reflexivity. 
+  - rewrite -> IHn. simpl. unfold negb. destruct (Nat.even n). 
+   * reflexivity. 
+   * reflexivity. 
+Qed. 
+
+Lemma even_double_conv :forall n, exists k,
+  n = if Nat.even n then double k else S (double k).
+  intros. induction n. 
+  - simpl. exists 0. simpl. simpl. reflexivity. 
+  - rewrite -> even_S. destruct IHn. destruct (Nat.even n).
+    * simpl. exists x. rewrite -> H. reflexivity. 
+    * simpl. Abort. 
+
+
+(** Regular Expressions **)
+
+Inductive reg_exp (T : Type) : Type :=
+  | EmptySet
+  | EmptyStr
+  | Char (t : T)
+  | App (r1 r2 : reg_exp T)
+  | Union (r1 r2 : reg_exp T)
+  | Star (r : reg_exp T).
+
+Arguments EmptySet {T}.
+Arguments EmptyStr {T}.
+Arguments Char {T} _.
+Arguments App {T} _ _.
+Arguments Union {T} _ _.
+Arguments Star {T} _.
+
+Reserved Notation "s =~ re" (at level 80).
+
+Inductive eq {X:Type} : X -> X -> Prop :=
+  | eq_refl : forall x, eq x x.
+Notation "x == y" := (eq x y)
+                       (at level 70, no associativity)
+                     : type_scope.
+
+Lemma equality__leibniz_equality : forall (X : Type) (x y: X),
+  x == y -> forall (P : X -> Prop), P x -> P y.
+Proof.
+  intros. destruct H. apply H0. 
+Qed. 
+
+Definition equality__leibniz_equality_term : forall (X : Type) (x y: X),
+    x == y -> forall P : (X -> Prop), P x -> P y := 
+    fun (X:Type) (x y: X) (H: x==y) (P:X->Prop) =>
+    match H with
+    | eq_refl a => fun evP => evP
+     end.
+
+
+Lemma leibniz_equality__equality : forall (X : Type) (x y: X),
+  (forall P:X->Prop, P x -> P y) -> x == y.
+Proof.
+  intros. Abort. 
+
+Print and_assoc. 
+
+(*** proving decidability **)
+
+Definition excluded_middle := forall P : Prop,
+  P \/ not P.
+
+Theorem not_exists_dist :
+  excluded_middle ->
+  forall (X:Type) (P : X -> Prop),
+    not (exists x, not (P x)) -> (forall x, P x).
+Proof.
+  intros. unfold excluded_middle in H. unfold not in H0. destruct (H (P x)). 
+  - apply H1. 
+  - unfold not in H1. destruct H0.  exists x. apply H1. 
+Qed. 
+
+Theorem excluded_middle_irrefutable: forall (P : Prop),
+  not (not (P \/ not P)).
+Proof.
+  unfold not. intros P f. apply f. right. intros p. destruct f. left. apply p. 
+Qed. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  

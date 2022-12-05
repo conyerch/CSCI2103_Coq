@@ -1,0 +1,65 @@
+
+Inductive ev : nat -> Prop :=
+  | ev_0 : ev 0
+  | ev_SS (n : nat) (H : ev n) : ev (S (S n)).
+
+Theorem SSSSev__even : forall n,
+  ev (S (S (S (S n)))) -> ev n.
+Proof.
+  intros. inversion H as [| n' H' Heq]. inversion H'. apply H1. 
+Qed. 
+
+Theorem inversion_ex2 : forall (n : nat),
+  S n = O -> 2 + 2 = 5.
+Proof. 
+  intros. inversion H. 
+Qed. 
+
+
+Theorem ev_sum : forall n m, ev n -> ev m -> ev (n + m).
+Proof.
+  intros. induction H. 
+  * simpl. apply H0. 
+  * induction H0. 
+    + simpl. apply ev_SS in IHev. apply IHev. 
+    + apply ev_SS in IHev. apply IHev. 
+Qed. 
+
+Inductive ev' : nat -> Prop :=
+  | ev'_0 : ev' 0
+  | ev'_2 : ev' 2
+  | ev'_sum n m (Hn : ev' n) (Hm : ev' m) : ev' (n + m).
+
+Theorem ev_ev__ev : forall n m,
+  ev (n+m) -> ev n -> ev m.
+Proof.
+  intros. induction H0. 
+  - simpl in H. apply H. 
+  - apply ev_SS in IHev. 
+    * inversion IHev. apply H2. 
+    * inversion H. apply H2. 
+Qed. 
+
+Lemma le_trans : forall m n o, m <= n -> n <= o -> m <= o.
+Proof.
+  intros. inversion H. 
+  * apply H0. 
+  * Abort. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  

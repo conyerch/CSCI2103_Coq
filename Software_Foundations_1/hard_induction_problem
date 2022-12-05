@@ -1,0 +1,72 @@
+
+
+Notation "x :: l" := (cons x l)
+                     (at level 60, right associativity).
+Notation "[ ]" := nil.
+Notation "[ x ; .. ; y ]" := (cons x .. (cons y nil) ..).
+
+
+Fixpoint eqb_list {A : Type} (eqb : A -> A -> bool)
+                  (l1 l2 : list A) : bool :=
+  match l1, l2 with
+  |[], [] => true
+  |[], x :: _ => false
+  |x :: _ , [] => false
+  |x1 :: y1, x2 :: y2 => andb (eqb x1 x2) (eqb_list eqb y1 y2)
+  end.
+
+Lemma andb_true_iff :
+  forall b1 b2:bool, andb b1 b2 = true <-> b1 = true /\ b2 = true.
+  Admitted. 
+
+Require Import Setoid. 
+
+
+Theorem eqb_list_true_iff :
+  forall A (eqb : A -> A -> bool),
+    (forall a1 a2, eqb a1 a2 = true <-> a1 = a2) ->
+    forall l1 l2, eqb_list eqb l1 l2 = true <-> l1 = l2.
+Proof.
+  intros A eqb H. induction l1 as [|h1 l1' IHl1]. 
+  - destruct l2. 
+    * split. reflexivity. reflexivity. 
+    * simpl. split. discriminate. discriminate. 
+  - simpl. destruct l2 as [|h2 l2']. 
+    * split. discriminate. discriminate. 
+    * split. 
+      +  rewrite andb_true_iff. rewrite H. rewrite IHl1. intros. inversion H0. rewrite H1. rewrite H2. reflexivity. 
+      + intros. injection H0. intros. rewrite andb_true_iff. rewrite H, IHl1. split. apply H2. apply H1. 
+Qed. 
+
+
+
+Theorem eqb_list_true_iff' :
+  forall A (eqb : A -> A -> bool),
+    (forall a1 a2, eqb a1 a2 = true <-> a1 = a2) ->
+    forall l1 l2, eqb_list eqb l1 l2 = true <-> l1 = l2.
+Proof.
+  intros A eqb eqb_compat_eq.
+  induction l1 as [|h1 l1' IHl1'].
+  - destruct l2.
+    + split. reflexivity. reflexivity.
+    + simpl. split. discriminate. discriminate.
+  - simpl. destruct l2 as [|h2  l2'].
+    + split. discriminate. discriminate.
+    + split.
+      { rewrite andb_true_iff.
+        rewrite eqb_compat_eq, IHl1'.
+        intros [Hh Hl']. rewrite Hh, Hl'. reflexivity. }
+      { intros H. injection H as Hh Hl'.
+        apply eqb_compat_eq in Hh.
+        apply IHl1' in Hl'.
+        rewrite Hh, Hl'. reflexivity. } *)
+
+
+
+
+
+
+
+
+
+

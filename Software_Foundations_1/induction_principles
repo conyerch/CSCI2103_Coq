@@ -1,0 +1,122 @@
+Require Export Arith_base. 
+
+Theorem mul_0_r' : forall n:nat,
+  n * 0 = 0.
+Proof.
+    apply nat_ind.
+  - reflexivity. 
+  - intros. apply H. 
+Qed. 
+
+Theorem plus_one_r' : forall n:nat,
+  n + 1 = S n.
+Proof.
+  apply nat_ind. 
+  - simpl. reflexivity. 
+  - intros. symmetry in H. symmetry. rewrite -> H. Abort.
+
+Inductive rgb : Type :=
+  | red
+  | green
+  | blue.
+Check rgb_ind.
+
+Inductive booltree : Type :=
+  | bt_empty
+  | bt_leaf (b : bool)
+  | bt_branch (b : bool) (t1 t2 : booltree).
+
+Definition booltree_property_type : Type := booltree -> Prop.
+
+Definition base_case (P : booltree_property_type) : Prop := 
+    P bt_empty. 
+
+Definition leaf_case (P : booltree_property_type) : Prop := 
+  forall b: bool, P (bt_leaf b). 
+
+Definition branch_case (P : booltree_property_type) : Prop :=
+  forall b: bool, (forall b1 : booltree, P b1 -> (forall b2 : booltree, P b2 -> P (bt_branch b b1 b2))). 
+
+Definition booltree_ind_type :=
+  forall (P : booltree_property_type),
+    base_case P ->
+    leaf_case P ->
+    branch_case P ->
+    forall (b : booltree), P b.
+
+Theorem booltree_ind_type_correct : booltree_ind_type.
+Proof. exact booltree_ind. 
+Qed. 
+
+
+Inductive tree (X:Type) : Type :=
+  | leaf (x : X)
+  | node (t1 t2 : tree X).
+
+Check tree_ind. 
+
+Inductive foo' (X:Type) : Type :=
+  | C1 (l : list X) (f : foo' X)
+  | C2.
+
+Check foo'_ind. 
+
+Definition P_m0r' : nat -> Prop :=
+  fun n => n * 0 = 0.
+
+Theorem mul_0_r'' : forall n:nat,
+  P_m0r' n.
+Proof.
+  apply nat_ind.
+  - reflexivity. 
+  - intros. unfold P_m0r' in H. unfold P_m0r'. simpl. apply H. 
+Qed. 
+
+ Inductive ev : nat -> Prop :=
+  | ev_0 : ev 0
+  | ev_SS : forall n : nat, ev n -> ev (S (S n)).
+
+Inductive ev' : nat -> Prop :=
+  | ev'_0 : ev' 0
+  | ev'_2 : ev' 2
+  | ev'_sum n m (Hn : ev' n) (Hm : ev' m) : ev' (n + m).
+
+Theorem ev_ev' : forall n, ev n -> ev' n.
+Proof.
+  apply ev_ind.
+  - apply ev'_0. 
+  - intros. apply (ev'_sum 2 n).  
+    * apply ev'_2. 
+    * apply H0. 
+Qed. 
+
+
+Notation "( x , y , .. , z )" := (pair .. (pair x y) .. z) : core_scope.
+Inductive t_tree (X : Type) : Type :=
+| t_leaf
+| t_branch : (t_tree X * X * t_tree X) -> t_tree X.
+Arguments t_leaf {X}.
+Arguments t_branch {X}.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

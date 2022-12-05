@@ -1,0 +1,107 @@
+Require Export Arith_base.
+
+Local Open Scope nat_scope.
+
+
+Definition square n := n * n.
+
+Lemma square_mult : forall n m, square (n * m) = square n * square m.
+Proof.
+  intros. unfold square. rewrite -> Nat.mul_assoc. assert (H : n * m * n = n * n * m).
+  - rewrite -> Nat.mul_comm. apply Nat.mul_assoc. 
+  - rewrite -> H. rewrite -> mult_assoc. reflexivity. 
+Qed. 
+
+Definition bar x :=
+  match x with
+  | O => 5
+  | S _ => 5
+  end.
+
+
+Fact silly_fact_2 : forall m, bar m + 1 = bar (m + 1) + 1.
+Proof.
+  intros. unfold bar. simpl. destruct m. 
+   - simpl. reflexivity. 
+  - reflexivity. 
+Qed. 
+
+Definition sillyfun (n : nat) : bool :=
+  if n =? 3 then false
+  else if n =? 5 then false
+  else false.
+
+Theorem sillyfun_false : forall (n : nat),
+  sillyfun n = false.
+Proof.
+  intros. unfold sillyfun. destruct (n =? 3). 
+  - reflexivity. 
+  - destruct (n=? 5). 
+    + reflexivity. 
+    +reflexivity. 
+Qed. 
+
+Require Import List.
+Import ListNotations.
+
+Fixpoint split {X Y : Type} (l : list (X*Y))
+               : (list X) * (list Y) :=
+  match l with
+  |[] => ([], [])
+  |(x, y) :: t =>
+      match split t with
+      | (lx, ly) => (x :: lx, y :: ly)
+      end
+  end.
+
+
+Theorem combine_split : forall X Y (l : list (X * Y)) l1 l2,
+  split l = (l1, l2) ->
+  combine l1 l2 = l.
+Proof.
+  intros X Y l. induction l as [|n l' IHl'].
+  - intros l1 l2 H. injection H. intros H1 H2. rewrite <- H1. rewrite <-H2. reflexivity. 
+  - destruct n as [n1 n2]. simpl. destruct (split l'). 
+  intros l1 l2 H. injection H as H1 H2. rewrite <- H1. rewrite <- H2. simpl. 
+  assert (combine l l0 = l'). { apply IHl'. reflexivity. }
+  rewrite -> H. reflexivity. 
+Qed. 
+
+Theorem eqb_sym : forall (n m : nat),
+  (n =? m) = (m =? n).
+Proof.
+  intros n. induction n as [|n']. 
+    - intros m. induction m. 
+      + reflexivity. 
+      + simpl. reflexivity. 
+    - intros m. induction m as [| m']. 
+      + reflexivity. 
+      + simpl. apply IHn'. 
+Qed. 
+
+Theorem eqb_trans : forall n m p,
+  n =? m = true ->
+  m =? p = true ->
+  n =? p = true.
+Proof.
+  intros n m p H H1. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,36 @@
+Theorem silly4 : forall (n m p q : nat),
+  (n = m -> p = q) -> 
+  m = n ->
+  q = p.
+Proof.
+  intros n m p q e1 e2. 
+  symmetry in e2. 
+  apply e1 in e2. symmetry in e2. apply e2. Qed.
+
+
+
+Theorem eqb_true : forall n m,
+  Nat.eqb n m = true -> n = m.
+Proof.
+  intros n. induction n. 
+    - intros m eq. destruct m.
+      +reflexivity.
+      +discriminate eq. 
+    - intros m eq. destruct m. 
+      +discriminate eq. 
+      +apply f_equal. apply IHn. apply eq. Qed. 
+
+
+Theorem plus_n_n_injective : forall n m,
+  n + n = m + m ->
+  n = m.
+Proof.
+  intro n. induction n as [|n']. 
+  - intros m eq. destruct m as [|m']. 
+    + reflexivity. 
+    + discriminate eq. 
+  - intros m eq2. rewrite <- plus_n_Sm in eq2. induction m as [|m']. 
+    + discriminate eq2. 
+    + rewrite <- plus_n_Sm in eq2. simpl in eq2. inversion eq2. apply IHn' in H0. rewrite -> H0. reflexivity. 
+Qed. 
+

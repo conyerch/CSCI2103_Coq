@@ -1,0 +1,233 @@
+Inductive natlist : Type :=
+  | nil
+  | cons (n : nat) (l : natlist).
+
+
+Theorem all3_spec : forall b c : bool,
+  orb
+    (andb b c)
+    (orb (negb b)
+         (negb c))
+  = true.
+Proof.
+intros b c. destruct c. 
+  - destruct b.
+    {simpl. reflexivity. 
+    }
+    {reflexivity.
+    }
+  -destruct b.
+    {simpl. reflexivity. 
+    }
+    {reflexivity.
+    } 
+Qed.
+
+Require Export Arith_base.
+
+Theorem mult_plus_distr_r : forall n m p : nat,
+  (n + m) * p = (n * p) + (m * p).
+Proof.
+
+intros n m p. induction n as [| n'].
+-simpl. reflexivity.
+- simpl. rewrite -> IHn'. destruct p.
+  {reflexivity.
+  }
+  {simpl. rewrite -> plus_assoc. reflexivity.
+  }
+Qed.
+
+Inductive bin : Type :=
+  | Z
+  | B0 (n : bin)
+  | B1 (n : bin)
+.
+
+Inductive natprod : Type :=
+  | pair (n1 n2 : nat).
+
+Check (pair 3 5).
+
+Notation "( x , y )" := (pair x y).
+
+Definition swap_pair (p : natprod) : natprod :=
+  match p with
+  | (x,y) => (y,x)
+  end.
+
+Definition fst' (p : natprod) : nat :=
+  match p with
+  | (x,y) => x
+  end.
+Definition snd' (p : natprod) : nat :=
+  match p with
+  | (x,y) => y
+  end.
+
+Definition fst (p : natprod) : nat :=
+  match p with
+  | pair x y => x
+  end.
+Definition snd (p : natprod) : nat :=
+  match p with
+  | pair x y => y
+  end.
+
+
+Theorem snd_fst_is_swap : forall (p : natprod),
+  (snd p, fst p) = swap_pair p.
+Proof.
+intros p. destruct p as [n m]. simpl. reflexivity. Qed.
+
+
+Notation "x :: l" := (cons x l)
+                     (at level 60, right associativity).
+Notation "[ ]" := nil.
+Notation "[ x ; .. ; y ]" := (cons x .. (cons y nil) ..).
+
+Fixpoint repeat (n count : nat) : natlist :=
+  match count with
+  | O => nil
+  | S count' => n :: (repeat n count')
+  end.
+
+
+Fixpoint length1 (l:natlist) : nat :=
+  match l with
+  | nil => O
+  | h :: t => S (length1 t)
+  end.
+
+
+Fixpoint app (l1 l2 : natlist) : natlist :=
+  match l1 with
+  | nil => l2
+  | h :: t => h :: (app t l2)
+  end.
+
+Notation "x ++ y" := (app x y)
+                     (right associativity, at level 60).
+
+Definition hd (default : nat) (l : natlist) : nat :=
+  match l with
+  | nil => default
+  | h :: t => h
+  end.
+Definition tl (l : natlist) : natlist :=
+  match l with
+  | nil => nil
+  | h :: t => t
+  end.
+
+
+Fixpoint nonzeros (l:natlist) : natlist :=
+  match l with
+  |nil => []
+  |h :: t => 
+    match h with 
+      |0 => nonzeros t
+      |_ => h :: nonzeros t 
+    end
+  end.
+
+Require Import PeanoNat.
+
+
+Fixpoint alternate (l1 l2 : natlist) : natlist :=
+  match l1, l2 with
+  |nil, nil => []
+  |h :: t, nil => l1
+  |nil, h ::t => l2
+  |h1 :: t1, h2 :: t2 => h1 :: h2 :: (alternate t1 t2)
+  end.
+
+
+
+Example test_alternate1:
+  alternate [1;2;3] [4;5;6] = [1;4;2;5;3;6].
+Proof. reflexivity.
+Qed.
+  
+Example test_alternate2:
+  alternate [1] [4;5;6] = [1;4;5;6].
+Proof. reflexivity.
+Qed.
+Require Import Notations Logic Datatypes.
+Require Decimal Hexadecimal Number.
+
+Definition bag := natlist.
+
+Fixpoint count (v : nat) (s : bag) : nat :=
+  match s with 
+  |[] => 0
+  |h :: t => 
+    match (Nat.eqb h v) with 
+    |true => 1 + count v t
+    |false => count v t
+    end
+  end.
+
+Require Import Le Gt Minus Min Bool.
+Require Import Setoid.
+
+Fixpoint remove_one (v : nat) (s : bag) : bag :=
+  match s with 
+  |[] => []
+  |h :: t => 
+    match (Nat.eqb h v) with 
+    |true => t
+    |false => h :: (remove_one v t)
+    end
+   end.
+
+*************************
+
+Theorem app_assoc : forall l1 l2 l3 : natlist,
+  (l1 ++ l2) ++ l3 = l1 ++ (l2 ++ l3).
+Proof.
+  intros l1 l2 l3. induction l1 as [| n l1' IHl1'].
+  - (* l1 = nil *)
+    reflexivity.
+  - (* l1 = cons n l1' *)
+    simpl. rewrite -> IHl1'. reflexivity. Qed.
+
+Fixpoint length (l:natlist) : nat :=
+  match l with
+  | [] => O
+  | h :: t => S (length t)
+  end.
+
+
+Fixpoint rev (l:natlist) : natlist :=
+  match l with
+  |[] => []
+  |h :: t => rev t ++ [h]
+  end.
+
+Theorem rev_length_firsttry : forall l : natlist,
+  length1(rev l) = (length l).
+Proof.
+  intros l. induction l as [| n l' IHl'].
+  - (* l = nil *)
+    reflexivity.
+  - simpl. rewrite <- IHl'. simpl. Abort.
+
+Theorem app_length : forall l1 l2 : natlist,
+  length (l1 ++ l2) = (length l1) + (length l2).
+Proof.
+
+
+(***Fixpoint oddmembers (l:natlist) : natlist:=
+  match l with
+  |nil => []
+  |h :: t => 
+    match (even(h)) with 
+      |true => nonzeros t
+      |_ => h :: nonzeros t 
+    end
+  end. Admitted ***)
+
+
+(***Definition countoddmembers (l:natlist) : nat :=
+  Admitted.***)
