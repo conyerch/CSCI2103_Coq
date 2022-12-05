@@ -1,4 +1,5 @@
-# CSCI2103_COQ_INDEPENDENT_STUDY
+# CSCI2103 Independant Study : Coq and Algorithm Verification
+# Chris Conyers
 
     Under the guidance of Professor Carl McTague and Professor Robert Muller of the Boston College Computer Science Department, this respository contains a
     series of explorations into proof verification with Coq. The bulk of the repository is currently a medley of excersizes from Software Foundations
