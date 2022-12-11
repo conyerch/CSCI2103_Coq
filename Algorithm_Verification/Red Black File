@@ -93,19 +93,18 @@ Definition elements {V : Type} (t : tree V) : list (key * V) :=
 
 Lemma ins_not_E : forall (V : Type) (x : key) (vx : V) (t : tree V),
     not (ins x vx t = E).
-Proof. Admitted. (**
-  intros. destruct t. 
-  - simpl. discriminate. 
-  - simpl. destruct (x >? k). 
-    + unfold balance. destruct c. 
-      * Abort. discriminate. 
-      * destruct (ins x vx t1). 
-        ** destruct t2. {discriminate.
-                        }
-         match goal with
-         | \u22a2 match ?c with Red => _ | Black => _ end <> _ => destruct c
-         | \u22a2 match ?t with E => _ | T _ _ _ _ _ => _ end <> _=> destruct t
-         end.**) 
+Proof.
+   intros. destruct t; simpl.
+  - discriminate.
+  - unfold balance.
+    repeat
+      match goal with
+      | |- (if ?x then _ else _) <> _ => destruct x
+      | |- match ?c with Red => _ | Black => _ end <> _=> destruct c
+      | |- match ?t with E => _ | T _ _ _ _ _ => _ end <> _=> destruct t
+      | |- T _ _ _ _ _ <> E => discriminate
+      end.
+Qed.
 
 Fixpoint ForallT {V : Type} (P: nat -> V -> Prop) (t : tree V) : Prop :=
   match t with
@@ -120,7 +119,16 @@ Lemma balanceP : forall (V : Type) (P : key -> V -> Prop) (c : color) (l r : tre
     P k v ->
     ForallT P (balance c l k v r).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. unfold balance.
+    repeat
+      match goal with
+      | |- match ?c with Red => _ | Black => _ end => destruct c
+      | |- match ?l with E => _ | T _ _ _ _ _ => _ end => destruct l
+      | |- T _ _ _ _ _ => repeat split
+      | |- P k v => auto
+      | |- ForallT _ _ => auto
+      end.
+  Admitted. 
 
 Inductive reflect (P : Prop) : bool -> Set :=
   | reflectT :   P -> reflect P true
@@ -491,7 +499,19 @@ Proof.
    intros. induction H. 
     - simpl. exists 0. apply RB_leaf. 
     - simpl. exists (S n). apply RB_b. 
-      * inversion IHRB1. 
+      * apply RB_blacken_parent. apply H. 
+      * apply RB_blacken_parent. apply H0. 
+    - simpl. exists (S n). apply RB_b. 
+      * apply H. 
+      * apply H0. 
+Qed. 
+
+Lemma insert_RB : forall (V : Type) (t : tree V) (k : key) (v : V) (n : nat),
+    RB t Red n -> 
+    exists (n' : nat), RB (insert k v t) Red n'.
+Proof.
+  intros. unfold insert. apply RB_blacken_root with n. apply ins_RB. apply H. 
+Qed. 
 
 
 
